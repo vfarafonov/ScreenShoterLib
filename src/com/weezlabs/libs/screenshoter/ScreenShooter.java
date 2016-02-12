@@ -11,7 +11,7 @@ public class ScreenShooter {
 
 		final ScreenShooterManager screenShooterManager = ScreenShooterManager.getInstance();
 		IDevice[] devices = screenShooterManager.getDevices();
-		if (devices.length == 0){
+		if (devices.length == 0) {
 			System.out.println("No device connected");
 			return;
 		}
@@ -20,33 +20,37 @@ public class ScreenShooter {
 			public void onDeviceInfoUpdated(Device device) {
 				System.out.println("Success. Density: " + device.getPhysicalDpi().getDensity() + " Resolution: " + device.getPhysicalResolution());
 				screenShooterManager.setDevice(device);
-				screenShooterManager.createScreenshotsForAllResolutions(new ScreenShooterManager.ScreenShotJobProgressListener() {
-					@Override
-					public void onScreenshotJobFinished() {
-						System.out.println("IT WORKS!!!!");
-						screenShooterManager.resetDeviceDisplay(new ScreenShooterManager.CommandStatusListener() {
+				screenShooterManager.createScreenshotsForAllResolutions(null,
+						null,
+						null,
+						new ScreenShooterManager.ScreenShotJobProgressListener() {
 							@Override
-							public void onCommandSentToDevice() {
-								System.out.println("Display params were reset");
+							public void onScreenshotJobFinished() {
+								System.out.println("IT WORKS!!!!");
+								screenShooterManager.resetDeviceDisplay(new ScreenShooterManager.CommandStatusListener() {
+									@Override
+									public void onCommandSentToDevice() {
+										System.out.println("Display params were reset");
+									}
+
+									@Override
+									public void onCommandExecutionFailed() {
+										System.out.println("Display params reset failed");
+									}
+								});
 							}
 
 							@Override
-							public void onCommandExecutionFailed() {
-								System.out.println("Display params reset failed");
+							public void onScreenshotJobFailed() {
+								System.out.println("Screenshot job failed");
 							}
-						});
-					}
 
-					@Override
-					public void onScreenshotJobFailed() {
-						System.out.println("Screenshot job failed");
-					}
+							@Override
+							public void onScreenshotJobCancelled() {
 
-					@Override
-					public void onScreenshotJobCancelled() {
-						
-					}
-				});
+							}
+						}
+				);
 			}
 
 			@Override

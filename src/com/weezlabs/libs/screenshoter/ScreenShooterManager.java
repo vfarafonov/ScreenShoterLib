@@ -5,6 +5,7 @@ import com.android.ddmlib.IDevice;
 import com.android.ddmlib.IShellOutputReceiver;
 import com.android.ddmlib.ShellCommandUnresponsiveException;
 import com.android.ddmlib.TimeoutException;
+import com.sun.istack.internal.Nullable;
 import com.sun.javafx.beans.annotations.NonNull;
 import com.weezlabs.libs.screenshoter.Model.Device;
 import com.weezlabs.libs.screenshoter.adb.AdbHelper;
@@ -19,7 +20,7 @@ import java.io.UnsupportedEncodingException;
  * Typical flow:<br>
  * 1. Get IDevices list<br>
  * 2. Request parameters for selected IDevice and set created Device object to manager's instance<br>
- * 3. Start screenshots job with {@link ScreenShooterManager#createScreenshotsForAllResolutions(ScreenShotJobProgressListener)}<br>
+ * 3. Start screenshots job with {@link ScreenShooterManager#createScreenshotsForAllResolutions(File, String, Integer, ScreenShotJobProgressListener)}<br>
  * 4. Reset display parameters with {@link ScreenShooterManager#resetDeviceDisplay(CommandStatusListener)}<br>
  * <p/>
  * Created by vfarafonov on 12.02.2016.
@@ -181,9 +182,17 @@ public class ScreenShooterManager {
 	}
 
 	/**
-	 * Goes through all possible display params and makes a screenshots
+	 * Goes through all possible display params and makes a screenshots.
+	 *
+	 * @param directory        Directory to save screenshots. Will try to create if not exists. {@link ScreenShooterManager#DEFAULT_SCREENSHOTS_DIR} will be used if null
+	 * @param filePrefix       File prefix. {@link ScreenShooterManager#DEFAULT_SCREENSHOTS_PREFIX} will be used if null
+	 * @param sleepTimeMs      Time to sleep before making a screenshot. {@link ScreenShooterManager#DEFAULT_SLEEP_TIME_MS} will be used if null
+	 * @param progressListener Progress listener
 	 */
-	public void createScreenshotsForAllResolutions(final ScreenShooterManager.ScreenShotJobProgressListener progressListener) {
+	public void createScreenshotsForAllResolutions(@Nullable File directory,
+												   @Nullable final String filePrefix,
+												   @Nullable final Integer sleepTimeMs,
+												   final ScreenShooterManager.ScreenShotJobProgressListener progressListener) {
 		if (device_ == null) {
 			throw new RuntimeException("Device must be set up");
 		}
@@ -191,12 +200,13 @@ public class ScreenShooterManager {
 		if (device_.getPhysicalDpi() == null || device_.getPhysicalResolution() == null) {
 			throw new IllegalArgumentException("Device's physical dpi and resolution cannot be null");
 		}
-		// TODO: add custom dir / output prefix feature
-		final File dir = new File(DEFAULT_SCREENSHOTS_DIR);
+
+		final File dir = directory != null ? directory : new File(DEFAULT_SCREENSHOTS_DIR);
 		if (!dir.exists() && !dir.mkdirs()) {
 			throw new RuntimeException("Cannot create screenshots dir");
 		}
 
+		isJobStarted = true;
 		ScreenShooterManager.CommandStatusListener commandSentListener = new ScreenShooterManager.CommandStatusListener() {
 			@Override
 			public void onCommandSentToDevice() {
@@ -246,12 +256,12 @@ public class ScreenShooterManager {
 			private void sleepAndMakeScreenshot() {
 				System.out.println("Resolution changed, sleeping");
 				try {
-					// TODO: add custom sleep time feature
-					Thread.sleep(DEFAULT_SLEEP_TIME_MS);
+					Thread.sleep(sleepTimeMs != null ? sleepTimeMs : DEFAULT_SLEEP_TIME_MS);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				File output = new File(dir, DEFAULT_SCREENSHOTS_PREFIX + device_.getCurrentResolution() + "_" + device_.getCurrentDpi() + ".png");
+				String fileName = filePrefix != null ? filePrefix : DEFAULT_SCREENSHOTS_PREFIX + device_.getCurrentResolution() + "_" + device_.getCurrentDpi() + ".png";
+				File output = new File(dir, fileName);
 				System.out.println("Woke up.. making a screenshot: " + output);
 				try {
 					output.createNewFile();
@@ -274,7 +284,6 @@ public class ScreenShooterManager {
 			}
 		};
 		shellHelper_.setResolutionAndDensity(device_.getCurrentResolution(), device_.getCurrentDpi(), commandSentListener);
-		isJobStarted = true;
 	}
 
 	public void stopScreenshotsJob() {
