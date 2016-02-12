@@ -41,6 +41,11 @@ public class ScreenShooter {
 					public void onScreenshotJobFailed() {
 						System.out.println("Screenshot job failed");
 					}
+
+					@Override
+					public void onScreenshotJobCancelled() {
+						
+					}
 				});
 			}
 
