@@ -10,7 +10,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://D:/Development/android_sdk/sdk/tools/lib/ddmlib.jar!/" />
+          <root url="jar://$MODULE_DIR$/libs/ddmlib.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
