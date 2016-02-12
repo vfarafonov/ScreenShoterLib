@@ -37,6 +37,7 @@ public class ScreenShooterManager {
 	private AdbHelper adbHelper_;
 	private DeviceShellHelper shellHelper_;
 	private Device device_;
+	private boolean isJobStarted;
 
 	private ScreenShooterManager() {
 		adbHelper_ = AdbHelper.getInstance();
@@ -199,8 +200,15 @@ public class ScreenShooterManager {
 		ScreenShooterManager.CommandStatusListener commandSentListener = new ScreenShooterManager.CommandStatusListener() {
 			@Override
 			public void onCommandSentToDevice() {
+				if (checkIsCancelled()) {
+					return;
+				}
 				// Display params changed. Need to wait activity re-initialising and then to make a screenshot
 				sleepAndMakeScreenshot();
+
+				if (checkIsCancelled()) {
+					return;
+				}
 
 				// Setting up next display params
 				device_.setCurrentDpi(device_.getCurrentDpi().getNext());
@@ -216,12 +224,23 @@ public class ScreenShooterManager {
 
 				if (device_.getCurrentResolution() == null) {
 					// Job is done
+					isJobStarted = false;
 					if (progressListener != null) {
 						progressListener.onScreenshotJobFinished();
 					}
 				} else {
 					shellHelper_.setResolutionAndDensity(device_.getCurrentResolution(), device_.getCurrentDpi(), this);
 				}
+			}
+
+			private boolean checkIsCancelled() {
+				if (!isJobStarted) {
+					if (progressListener != null) {
+						progressListener.onScreenshotJobCancelled();
+					}
+					return true;
+				}
+				return false;
 			}
 
 			private void sleepAndMakeScreenshot() {
@@ -248,12 +267,20 @@ public class ScreenShooterManager {
 
 			@Override
 			public void onCommandExecutionFailed() {
+				isJobStarted = false;
 				if (progressListener != null) {
 					progressListener.onScreenshotJobFailed();
 				}
 			}
 		};
 		shellHelper_.setResolutionAndDensity(device_.getCurrentResolution(), device_.getCurrentDpi(), commandSentListener);
+		isJobStarted = true;
+	}
+
+	public void stopScreenshotsJob() {
+		if (isJobStarted) {
+			isJobStarted = false;
+		}
 	}
 
 	public interface DeviceInfoListener {
@@ -269,10 +296,11 @@ public class ScreenShooterManager {
 	}
 
 	public interface ScreenShotJobProgressListener {
-		// TODO: add "cancel" feature
 		// TODO: add "progress update" feature
 		void onScreenshotJobFinished();
 
 		void onScreenshotJobFailed();
+
+		void onScreenshotJobCancelled();
 	}
 }
