@@ -242,6 +242,61 @@ public class ScreenShooterManager {
 	}
 
 	/**
+	 * Goes through all possible display params and makes a screenshots. Works asynchronous.
+	 *
+	 * @param directory        Directory to save screenshots. Will try to create if not exists. {@link ScreenShooterManager#DEFAULT_SCREENSHOTS_DIR} will be used if null
+	 * @param filePrefix       File prefix. {@link ScreenShooterManager#DEFAULT_SCREENSHOTS_PREFIX} will be used if null
+	 * @param sleepTimeMs      Time to sleep before making a screenshot. {@link ScreenShooterManager#DEFAULT_SLEEP_TIME_MS} will be used if null
+	 * @param progressListener Progress listener
+	 */
+	public void	createScreenshotsForAllResolutionsAsync(@Nullable final File directory,
+													  @Nullable final String filePrefix,
+													  @Nullable final Integer sleepTimeMs,
+													  final ScreenShooterManager.ScreenShotJobProgressListener progressListener) {
+		new SwingWorker<Void, Void>(){
+			private Integer SUCCESS = 1;
+			private Integer FAIL = 2;
+			private Integer CANCEL = 3;
+
+			private int result = 0;
+
+			@Override
+			protected Void doInBackground() throws Exception {
+				createScreenshotsForAllResolutions(directory, filePrefix, sleepTimeMs, new ScreenShotJobProgressListener() {
+					@Override
+					public void onScreenshotJobFinished() {
+						result = SUCCESS;
+					}
+
+					@Override
+					public void onScreenshotJobFailed() {
+						result = FAIL;
+					}
+
+					@Override
+					public void onScreenshotJobCancelled() {
+						result = CANCEL;
+					}
+				});
+				return null;
+			}
+
+			@Override
+			protected void done() {
+				if (progressListener != null){
+					if (result == SUCCESS){
+						progressListener.onScreenshotJobFinished();
+					} else if (result == CANCEL){
+						progressListener.onScreenshotJobCancelled();
+					} else if (result == FAIL){
+						progressListener.onScreenshotJobFailed();
+					}
+				}
+			}
+		}.execute();
+	}
+
+	/**
 	 * Goes through all possible display params and makes a screenshots.
 	 *
 	 * @param directory        Directory to save screenshots. Will try to create if not exists. {@link ScreenShooterManager#DEFAULT_SCREENSHOTS_DIR} will be used if null
