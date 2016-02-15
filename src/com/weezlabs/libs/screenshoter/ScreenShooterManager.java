@@ -7,13 +7,15 @@ import com.android.ddmlib.ShellCommandUnresponsiveException;
 import com.android.ddmlib.TimeoutException;
 import com.sun.istack.internal.Nullable;
 import com.sun.javafx.beans.annotations.NonNull;
-import com.weezlabs.libs.screenshoter.Model.Device;
 import com.weezlabs.libs.screenshoter.adb.AdbHelper;
 import com.weezlabs.libs.screenshoter.adb.DeviceShellHelper;
+import com.weezlabs.libs.screenshoter.model.Device;
+import com.weezlabs.libs.screenshoter.model.Mode;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 import javax.swing.SwingWorker;
 
@@ -22,23 +24,20 @@ import javax.swing.SwingWorker;
  * Typical flow:<br>
  * 1. Get IDevices list<br>
  * 2. Request parameters for selected IDevice and set created Device object to manager's instance<br>
- * 3. Start screenshots job with {@link ScreenShooterManager#createScreenshotsForAllResolutions(File, String, Integer, ScreenShotJobProgressListener)}<br>
+ * 3. Start screenshots job with {@link ScreenShooterManager#createScreenshotsForAllResolutions(File, String, Integer, List, ScreenShotJobProgressListener)}<br>
  * 4. Reset display parameters with {@link ScreenShooterManager#resetDeviceDisplay(CommandStatusListener)}<br>
  * <p/>
  * Created by vfarafonov on 12.02.2016.
  */
 public class ScreenShooterManager {
-	private static final String TEXT_PHYSICAL_DENSITY = "Physical density: ";
-	private static final String TEXT_PHYSICAL_SIZE = "Physical size: ";
-
-	private static final int SUCCESS = 1;
-	private static final int FAIL = 2;
-	private static final int CANCEL = 3;
-
 	public static final String DEFAULT_SCREENSHOTS_DIR = "screenshots";
 	public static final String DEFAULT_SCREENSHOTS_PREFIX = "output_";
 	public static final int DEFAULT_SLEEP_TIME_MS = 1000;
-
+	private static final String TEXT_PHYSICAL_DENSITY = "Physical density: ";
+	private static final String TEXT_PHYSICAL_SIZE = "Physical size: ";
+	private static final int SUCCESS = 1;
+	private static final int FAIL = 2;
+	private static final int CANCEL = 3;
 	private static volatile ScreenShooterManager instance_;
 
 	private AdbHelper adbHelper_;
@@ -242,7 +241,7 @@ public class ScreenShooterManager {
 	}
 
 	public void resetDeviceDisplayAsync(final CommandStatusListener statusListener) {
-		new SwingWorker<Void, Void>(){
+		new SwingWorker<Void, Void>() {
 			private int result;
 
 			@Override
@@ -265,7 +264,7 @@ public class ScreenShooterManager {
 			@Override
 			protected void done() {
 				if (statusListener != null) {
-					if (result == SUCCESS){
+					if (result == SUCCESS) {
 						statusListener.onCommandSentToDevice();
 					} else {
 						statusListener.onCommandExecutionFailed();
@@ -285,18 +284,20 @@ public class ScreenShooterManager {
 	 * @param directory        Directory to save screenshots. Will try to create if not exists. {@link ScreenShooterManager#DEFAULT_SCREENSHOTS_DIR} will be used if null
 	 * @param filePrefix       File prefix. {@link ScreenShooterManager#DEFAULT_SCREENSHOTS_PREFIX} will be used if null
 	 * @param sleepTimeMs      Time to sleep before making a screenshot. {@link ScreenShooterManager#DEFAULT_SLEEP_TIME_MS} will be used if null
+	 * @param excludeModes     List of modes excluded from making a screenshot
 	 * @param progressListener Progress listener
 	 */
-	public void	createScreenshotsForAllResolutionsAsync(@Nullable final File directory,
-													  @Nullable final String filePrefix,
-													  @Nullable final Integer sleepTimeMs,
-													  final ScreenShooterManager.ScreenShotJobProgressListener progressListener) {
-		new SwingWorker<Void, Void>(){
+	public void createScreenshotsForAllResolutionsAsync(@Nullable final File directory,
+														@Nullable final String filePrefix,
+														@Nullable final Integer sleepTimeMs,
+														@Nullable final List<Mode> excludeModes,
+														final ScreenShooterManager.ScreenShotJobProgressListener progressListener) {
+		new SwingWorker<Void, Void>() {
 			private int result = 0;
 
 			@Override
 			protected Void doInBackground() throws Exception {
-				createScreenshotsForAllResolutions(directory, filePrefix, sleepTimeMs, new ScreenShotJobProgressListener() {
+				createScreenshotsForAllResolutions(directory, filePrefix, sleepTimeMs, excludeModes, new ScreenShotJobProgressListener() {
 					@Override
 					public void onScreenshotJobFinished() {
 						result = SUCCESS;
@@ -317,12 +318,12 @@ public class ScreenShooterManager {
 
 			@Override
 			protected void done() {
-				if (progressListener != null){
-					if (result == SUCCESS){
+				if (progressListener != null) {
+					if (result == SUCCESS) {
 						progressListener.onScreenshotJobFinished();
-					} else if (result == CANCEL){
+					} else if (result == CANCEL) {
 						progressListener.onScreenshotJobCancelled();
-					} else if (result == FAIL){
+					} else if (result == FAIL) {
 						progressListener.onScreenshotJobFailed();
 					}
 				}
@@ -336,12 +337,14 @@ public class ScreenShooterManager {
 	 * @param directory        Directory to save screenshots. Will try to create if not exists. {@link ScreenShooterManager#DEFAULT_SCREENSHOTS_DIR} will be used if null
 	 * @param filePrefix       File prefix. {@link ScreenShooterManager#DEFAULT_SCREENSHOTS_PREFIX} will be used if null
 	 * @param sleepTimeMs      Time to sleep before making a screenshot. {@link ScreenShooterManager#DEFAULT_SLEEP_TIME_MS} will be used if null
+	 * @param excludeModes
 	 * @param progressListener Progress listener
 	 */
 	public void createScreenshotsForAllResolutions(@Nullable File directory,
 												   @Nullable final String filePrefix,
 												   @Nullable final Integer sleepTimeMs,
-												   final ScreenShooterManager.ScreenShotJobProgressListener progressListener) {
+												   final List<Mode> excludeModes,
+												   final ScreenShotJobProgressListener progressListener) {
 		if (device_ == null) {
 			throw new RuntimeException("Device must be set up");
 		}
@@ -370,16 +373,7 @@ public class ScreenShooterManager {
 				}
 
 				// Setting up next display params
-				device_.setCurrentDpi(device_.getCurrentDpi().getNext());
-				if (device_.getCurrentDpi() == null) {
-					// Went through all Dpis for current resolution. Setting up next resolution
-					device_.setCurrentResolution(device_.getCurrentResolution().getNext());
-					if (device_.getCurrentResolution() != null) {
-						// Set current Dpi as min between Physical dpi and max dpi for the new resolution
-						device_.setCurrentDpi(device_.getPhysicalDpi().getDensity() < device_.getCurrentResolution().getMaxDpi().getDensity() ?
-								device_.getPhysicalDpi() : device_.getCurrentResolution().getMaxDpi());
-					}
-				}
+				setNextDisplayParams(excludeModes);
 
 				if (device_.getCurrentResolution() == null) {
 					// Job is done
@@ -434,6 +428,35 @@ public class ScreenShooterManager {
 			}
 		};
 		shellHelper_.setResolutionAndDensity(device_.getCurrentResolution(), device_.getCurrentDpi(), commandSentListener);
+	}
+
+	private void setNextDisplayParams(List<Mode> excludeModes) {
+		do {
+			device_.setCurrentDpi(device_.getCurrentDpi().getNext());
+			if (device_.getCurrentDpi() == null) {
+				// Went through all Dpis for current resolution. Setting up next resolution
+				device_.setCurrentResolution(device_.getCurrentResolution().getNext());
+				if (device_.getCurrentResolution() != null) {
+					// Set current Dpi as min between Physical dpi and max dpi for the new resolution
+					device_.setCurrentDpi(device_.getPhysicalDpi().getDensity() < device_.getCurrentResolution().getMaxDpi().getDensity() ?
+							device_.getPhysicalDpi() : device_.getCurrentResolution().getMaxDpi());
+				}
+			}
+		} while (isSkipping(excludeModes, device_.getCurrentResolution(), device_.getCurrentDpi()));
+
+
+	}
+
+	private boolean isSkipping(List<Mode> excludeModes, Device.Resolution resolution, Device.Dpi density) {
+		if (excludeModes == null || excludeModes.size() == 0) {
+			return false;
+		}
+		for (Mode mode : excludeModes) {
+			if (mode.getResolution() == resolution && mode.getDensity() == density) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public void stopScreenshotsJob() {

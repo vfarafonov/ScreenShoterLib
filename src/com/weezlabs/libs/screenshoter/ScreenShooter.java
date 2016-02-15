@@ -1,7 +1,7 @@
 package com.weezlabs.libs.screenshoter;
 
 import com.android.ddmlib.IDevice;
-import com.weezlabs.libs.screenshoter.Model.Device;
+import com.weezlabs.libs.screenshoter.model.Device;
 
 /**
  * Created by vfarafonov on 09.02.2016.
@@ -21,6 +21,7 @@ public class ScreenShooter {
 				System.out.println("Success. Density: " + device.getPhysicalDpi().getDensity() + " Resolution: " + device.getPhysicalResolution());
 				screenShooterManager.setDevice(device);
 				screenShooterManager.createScreenshotsForAllResolutions(null,
+						null,
 						null,
 						null,
 						new ScreenShooterManager.ScreenShotJobProgressListener() {

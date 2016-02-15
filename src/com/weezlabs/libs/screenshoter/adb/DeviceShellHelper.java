@@ -7,7 +7,7 @@ import com.android.ddmlib.RawImage;
 import com.android.ddmlib.ShellCommandUnresponsiveException;
 import com.android.ddmlib.TimeoutException;
 import com.sun.javafx.beans.annotations.NonNull;
-import com.weezlabs.libs.screenshoter.Model.Device;
+import com.weezlabs.libs.screenshoter.model.Device;
 import com.weezlabs.libs.screenshoter.ScreenShooterManager;
 
 import java.awt.image.BufferedImage;

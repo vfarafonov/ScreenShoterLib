@@ -1,4 +1,4 @@
-package com.weezlabs.libs.screenshoter.Model;
+package com.weezlabs.libs.screenshoter.model;
 
 import com.android.ddmlib.IDevice;
 
