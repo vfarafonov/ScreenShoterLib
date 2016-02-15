@@ -15,6 +15,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
+import javax.swing.SwingWorker;
+
 /**
  * Manager to interact with Adb. <br>
  * Typical flow:<br>
@@ -50,13 +52,36 @@ public class ScreenShooterManager {
 
 	public static ScreenShooterManager getInstance() {
 		if (instance_ == null) {
-			synchronized (ScreenShooterManager.class) {
-				if (instance_ == null) {
-					instance_ = new ScreenShooterManager();
-				}
-			}
+			System.out.println("Creating sync");
+			createInstance();
 		}
 		return instance_;
+	}
+
+	public static void getInstanceAsync(final ManagerInitListener listener) {
+		new SwingWorker<Void, Void>() {
+
+			@Override
+			protected Void doInBackground() throws Exception {
+				if (instance_ == null) {
+					createInstance();
+				}
+				return null;
+			}
+
+			@Override
+			protected void done() {
+				if (listener != null) {
+					listener.onManagerReady(instance_);
+				}
+			}
+		}.execute();
+	}
+
+	private static synchronized void createInstance() {
+		if (instance_ == null) {
+			instance_ = new ScreenShooterManager();
+		}
 	}
 
 	/**
@@ -290,6 +315,10 @@ public class ScreenShooterManager {
 		if (isJobStarted) {
 			isJobStarted = false;
 		}
+	}
+
+	public interface ManagerInitListener {
+		void onManagerReady(ScreenShooterManager manager);
 	}
 
 	public interface DeviceInfoListener {
