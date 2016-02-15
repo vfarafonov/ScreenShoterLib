@@ -39,11 +39,11 @@ public class Mode {
 		return density_;
 	}
 
-	public void setIsSkipping(boolean isSkipping) {
-		isActivated_ = isSkipping;
+	public void setIsActivated(boolean isActivated) {
+		isActivated_ = isActivated;
 	}
 
-	public boolean isSkipping() {
+	public boolean isActivated() {
 		return isActivated_;
 	}
 }
