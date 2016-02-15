@@ -31,9 +31,9 @@ public class ScreenShooterManager {
 	private static final String TEXT_PHYSICAL_DENSITY = "Physical density: ";
 	private static final String TEXT_PHYSICAL_SIZE = "Physical size: ";
 
-	private static final String DEFAULT_SCREENSHOTS_DIR = "screenshots";
-	private static final String DEFAULT_SCREENSHOTS_PREFIX = "output_";
-	private static final int DEFAULT_SLEEP_TIME_MS = 1000;
+	public static final String DEFAULT_SCREENSHOTS_DIR = "screenshots";
+	public static final String DEFAULT_SCREENSHOTS_PREFIX = "output_";
+	public static final int DEFAULT_SLEEP_TIME_MS = 1000;
 
 	private static volatile ScreenShooterManager instance_;
 
