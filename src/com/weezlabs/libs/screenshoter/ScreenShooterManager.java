@@ -31,6 +31,10 @@ public class ScreenShooterManager {
 	private static final String TEXT_PHYSICAL_DENSITY = "Physical density: ";
 	private static final String TEXT_PHYSICAL_SIZE = "Physical size: ";
 
+	private static final int SUCCESS = 1;
+	private static final int FAIL = 2;
+	private static final int CANCEL = 3;
+
 	public static final String DEFAULT_SCREENSHOTS_DIR = "screenshots";
 	public static final String DEFAULT_SCREENSHOTS_PREFIX = "output_";
 	public static final int DEFAULT_SLEEP_TIME_MS = 1000;
@@ -237,6 +241,40 @@ public class ScreenShooterManager {
 		shellHelper_.setIDevice(device_.getIDevice());
 	}
 
+	public void resetDeviceDisplayAsync(final CommandStatusListener statusListener) {
+		new SwingWorker<Void, Void>(){
+			private int result;
+
+			@Override
+			protected Void doInBackground() throws Exception {
+				resetDeviceDisplay(new CommandStatusListener() {
+					@Override
+					public void onCommandSentToDevice() {
+						result = SUCCESS;
+					}
+
+					@Override
+					public void onCommandExecutionFailed() {
+						result = FAIL;
+					}
+				});
+				return null;
+			}
+
+
+			@Override
+			protected void done() {
+				if (statusListener != null) {
+					if (result == SUCCESS){
+						statusListener.onCommandSentToDevice();
+					} else {
+						statusListener.onCommandExecutionFailed();
+					}
+				}
+			}
+		}.execute();
+	}
+
 	public void resetDeviceDisplay(CommandStatusListener statusListener) {
 		shellHelper_.resetDeviceDisplay(statusListener);
 	}
@@ -254,10 +292,6 @@ public class ScreenShooterManager {
 													  @Nullable final Integer sleepTimeMs,
 													  final ScreenShooterManager.ScreenShotJobProgressListener progressListener) {
 		new SwingWorker<Void, Void>(){
-			private Integer SUCCESS = 1;
-			private Integer FAIL = 2;
-			private Integer CANCEL = 3;
-
 			private int result = 0;
 
 			@Override
