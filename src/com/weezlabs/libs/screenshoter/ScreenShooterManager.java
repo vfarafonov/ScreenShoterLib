@@ -85,6 +85,41 @@ public class ScreenShooterManager {
 	}
 
 	/**
+	 * Requests device's display parameters asynchronous
+	 */
+	public static void getDeviceDisplayInfoAsync(@NonNull final IDevice iDevice, @NonNull final ScreenShooterManager.DeviceInfoListener deviceInfoListener) {
+		new SwingWorker<Void, Void>() {
+			private Device device_;
+			private Exception exception_;
+
+			@Override
+			protected Void doInBackground() throws Exception {
+				getDeviceDisplayInfo(iDevice, new DeviceInfoListener() {
+					@Override
+					public void onDeviceInfoUpdated(Device device) {
+						device_ = device;
+					}
+
+					@Override
+					public void onDeviceUpdateFailed(IDevice iDevice, Exception e) {
+						exception_ = e;
+					}
+				});
+				return null;
+			}
+
+			@Override
+			protected void done() {
+				if (device_ != null) {
+					deviceInfoListener.onDeviceInfoUpdated(device_);
+				} else {
+					deviceInfoListener.onDeviceUpdateFailed(iDevice, exception_);
+				}
+			}
+		}.execute();
+	}
+
+	/**
 	 * Requests device's display parameters
 	 */
 	public static void getDeviceDisplayInfo(@NonNull final IDevice iDevice, @NonNull final ScreenShooterManager.DeviceInfoListener deviceInfoListener) {
