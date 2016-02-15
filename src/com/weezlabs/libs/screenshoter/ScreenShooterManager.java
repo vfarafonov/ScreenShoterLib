@@ -320,7 +320,8 @@ public class ScreenShooterManager {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				String fileName = filePrefix != null ? filePrefix : DEFAULT_SCREENSHOTS_PREFIX + device_.getCurrentResolution() + "_" + device_.getCurrentDpi() + ".png";
+				String fileName = filePrefix != null ? filePrefix : DEFAULT_SCREENSHOTS_PREFIX;
+				fileName = fileName + device_.getCurrentResolution() + "_" + device_.getCurrentDpi() + ".png";
 				File output = new File(dir, fileName);
 				System.out.println("Woke up.. making a screenshot: " + output);
 				try {
