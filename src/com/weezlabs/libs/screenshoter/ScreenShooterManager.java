@@ -348,7 +348,6 @@ public class ScreenShooterManager {
 		if (device_ == null) {
 			throw new RuntimeException("Device must be set up");
 		}
-		// TODO: add mode selection feature
 		if (device_.getPhysicalDpi() == null || device_.getPhysicalResolution() == null) {
 			throw new IllegalArgumentException("Device's physical dpi and resolution cannot be null");
 		}
@@ -443,8 +442,6 @@ public class ScreenShooterManager {
 				}
 			}
 		} while (isSkipping(excludeModes, device_.getCurrentResolution(), device_.getCurrentDpi()));
-
-
 	}
 
 	private boolean isSkipping(List<Mode> excludeModes, Device.Resolution resolution, Device.Dpi density) {

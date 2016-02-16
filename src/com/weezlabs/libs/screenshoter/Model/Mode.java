@@ -17,6 +17,7 @@ public class Mode {
 	}
 
 	public static List<Mode> getModesQueue(Device device) {
+		// TODO: refactor commands to use modes list
 		List<Mode> modes = new ArrayList<>();
 		Device.Resolution resolution = device.getPhysicalResolution();
 		Device.Dpi density = device.getPhysicalDpi();
@@ -24,8 +25,11 @@ public class Mode {
 			modes.add(new Mode(resolution, density));
 			density = density.getNext();
 			if (density == null) {
-				density = device.getPhysicalDpi();
 				resolution = resolution.getNext();
+				density = device.getPhysicalDpi();
+				if (resolution != null){
+					density = device.getCurrentDpi().getDensity() < resolution.getMaxDpi().getDensity() ? device.getCurrentDpi() : resolution.getMaxDpi();
+				}
 			}
 		}
 		return modes;
