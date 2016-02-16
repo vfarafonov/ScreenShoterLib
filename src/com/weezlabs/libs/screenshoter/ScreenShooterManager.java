@@ -201,7 +201,7 @@ public class ScreenShooterManager {
 	private static Device.Resolution getResolutionFromOutput(String output) {
 		int index = output.indexOf(TEXT_PHYSICAL_SIZE);
 		if (index != -1) {
-			int lineEndingIndex = output.lastIndexOf("\n");
+			int lineEndingIndex = output.indexOf("\n");
 			String resolutionString = output.substring(
 					index + TEXT_PHYSICAL_SIZE.length(),
 					lineEndingIndex != -1 ? lineEndingIndex - 1 : output.length()
@@ -220,7 +220,7 @@ public class ScreenShooterManager {
 	private static Device.Dpi getDpiFromOutput(String output) {
 		int index = output.indexOf(TEXT_PHYSICAL_DENSITY);
 		if (index != -1) {
-			int lineEndingIndex = output.lastIndexOf("\n");
+			int lineEndingIndex = output.indexOf("\n");
 			String densityString = output.substring(
 					index + TEXT_PHYSICAL_DENSITY.length(),
 					lineEndingIndex != -1 ? lineEndingIndex - 1 : output.length()
