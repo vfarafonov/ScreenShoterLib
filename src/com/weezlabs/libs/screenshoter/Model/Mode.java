@@ -28,7 +28,7 @@ public class Mode {
 				resolution = resolution.getNext();
 				density = device.getPhysicalDpi();
 				if (resolution != null) {
-					density = device.getCurrentDpi().getDpiValue() < resolution.getMaxDpi().getDpiValue() ? device.getCurrentDpi() : resolution.getMaxDpi();
+					density = device.getPhysicalDpi().getDpiValue() < resolution.getMaxDpi().getDpiValue() ? device.getPhysicalDpi() : resolution.getMaxDpi();
 				}
 			}
 		}
