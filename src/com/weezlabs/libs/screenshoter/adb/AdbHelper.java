@@ -66,4 +66,8 @@ public class AdbHelper {
 	public void restartAdb() {
 		adb_.restart();
 	}
+
+	public void addDeviceListener(AndroidDebugBridge.IDeviceChangeListener listener) {
+		AndroidDebugBridge.addDeviceChangeListener(listener);
+	}
 }

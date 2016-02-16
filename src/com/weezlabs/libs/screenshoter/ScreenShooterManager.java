@@ -1,6 +1,7 @@
 package com.weezlabs.libs.screenshoter;
 
 import com.android.ddmlib.AdbCommandRejectedException;
+import com.android.ddmlib.AndroidDebugBridge;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.IShellOutputReceiver;
 import com.android.ddmlib.ShellCommandUnresponsiveException;
@@ -461,6 +462,10 @@ public class ScreenShooterManager {
 		if (isJobStarted) {
 			isJobStarted = false;
 		}
+	}
+
+	public void addDeviceChangeListener(AndroidDebugBridge.IDeviceChangeListener listener) {
+		adbHelper_.addDeviceListener(listener);
 	}
 
 	public interface ManagerInitListener {
