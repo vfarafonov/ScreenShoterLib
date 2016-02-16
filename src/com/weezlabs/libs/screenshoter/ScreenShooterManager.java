@@ -278,7 +278,7 @@ public class ScreenShooterManager {
 	}
 
 	/**
-	 * Goes through all possible display params and makes a screenshots. Works asynchronous.
+	 * Goes through all possible display params and makes a screenshots. Skips modes in excludeModes list. Works asynchronous.
 	 *
 	 * @param directory        Directory to save screenshots. Will try to create if not exists. {@link ScreenShooterManager#DEFAULT_SCREENSHOTS_DIR} will be used if null
 	 * @param filePrefix       File prefix. {@link ScreenShooterManager#DEFAULT_SCREENSHOTS_PREFIX} will be used if null
@@ -291,7 +291,8 @@ public class ScreenShooterManager {
 														@Nullable final Integer sleepTimeMs,
 														@Nullable final List<Mode> excludeModes,
 														final ScreenShooterManager.ScreenShotJobProgressListener progressListener) {
-		new SwingWorker<Void, Void>() {
+		new SwingWorker<Void, Integer>() {
+			public int totalCount_;
 			private int result = 0;
 
 			@Override
@@ -311,8 +312,23 @@ public class ScreenShooterManager {
 					public void onScreenshotJobCancelled() {
 						result = CANCEL;
 					}
+
+					@Override
+					public void onScreenshotJobProgressUpdate(int currentProgress, int totalCount) {
+						if (totalCount_ == 0) {
+							totalCount_ = totalCount;
+						}
+						publish(currentProgress);
+					}
 				});
 				return null;
+			}
+
+			@Override
+			protected void process(List<Integer> chunks) {
+				if (progressListener != null) {
+					progressListener.onScreenshotJobProgressUpdate(chunks.get(chunks.size() - 1), totalCount_);
+				}
 			}
 
 			@Override
@@ -331,12 +347,12 @@ public class ScreenShooterManager {
 	}
 
 	/**
-	 * Goes through all possible display params and makes a screenshots.
+	 * Goes through all possible display params and makes a screenshots. Skips modes in excludeModes list
 	 *
 	 * @param directory        Directory to save screenshots. Will try to create if not exists. {@link ScreenShooterManager#DEFAULT_SCREENSHOTS_DIR} will be used if null
 	 * @param filePrefix       File prefix. {@link ScreenShooterManager#DEFAULT_SCREENSHOTS_PREFIX} will be used if null
 	 * @param sleepTimeMs      Time to sleep before making a screenshot. {@link ScreenShooterManager#DEFAULT_SLEEP_TIME_MS} will be used if null
-	 * @param excludeModes
+	 * @param excludeModes     List of modes excluded from making a screenshot
 	 * @param progressListener Progress listener
 	 */
 	public void createScreenshotsForAllResolutions(@Nullable File directory,
@@ -412,13 +428,18 @@ public class ScreenShooterManager {
 			}
 		};
 
-		for (Mode mode : modesList) {
+		int size = modesList.size();
+		for (int i = 0; i < size; i++) {
 			if (checkIsCancelled(progressListener)) {
 				break;
 			}
+			Mode mode = modesList.get(i);
 			device_.setCurrentDpi(mode.getDensity());
 			device_.setCurrentResolution(mode.getResolution());
 			shellHelper_.setResolutionAndDensity(mode.getResolution(), mode.getDensity(), commandSentListener);
+			if (progressListener != null) {
+				progressListener.onScreenshotJobProgressUpdate(i + 1, size);
+			}
 		}
 		isJobStarted = false;
 		if (progressListener != null) {
@@ -459,11 +480,12 @@ public class ScreenShooterManager {
 	}
 
 	public interface ScreenShotJobProgressListener {
-		// TODO: add "progress update" feature
 		void onScreenshotJobFinished();
 
 		void onScreenshotJobFailed();
 
 		void onScreenshotJobCancelled();
+
+		void onScreenshotJobProgressUpdate(int currentProgress, int totalCount);
 	}
 }

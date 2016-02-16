@@ -59,6 +59,11 @@ public class ScreenShooter {
 							public void onScreenshotJobCancelled() {
 
 							}
+
+							@Override
+							public void onScreenshotJobProgressUpdate(int currentProgress, int totalCount) {
+								System.out.println("Progress: " + currentProgress + " / " + totalCount);
+							}
 						}
 				);
 			}
