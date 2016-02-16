@@ -27,12 +27,26 @@ public class Mode {
 			if (density == null) {
 				resolution = resolution.getNext();
 				density = device.getPhysicalDpi();
-				if (resolution != null){
-					density = device.getCurrentDpi().getDensity() < resolution.getMaxDpi().getDensity() ? device.getCurrentDpi() : resolution.getMaxDpi();
+				if (resolution != null) {
+					density = device.getCurrentDpi().getDpiValue() < resolution.getMaxDpi().getDpiValue() ? device.getCurrentDpi() : resolution.getMaxDpi();
 				}
 			}
 		}
 		return modes;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (!Mode.class.isAssignableFrom(obj.getClass())) {
+			return false;
+		}
+		final Mode other = (Mode) obj;
+		return resolution_.getHeight() == other.getResolution().getHeight() &&
+				resolution_.getWidth() == other.getResolution().getWidth() &&
+				density_.getDpiValue() == other.getDensity().getDpiValue();
 	}
 
 	public Device.Resolution getResolution() {

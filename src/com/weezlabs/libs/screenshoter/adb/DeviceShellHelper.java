@@ -7,8 +7,8 @@ import com.android.ddmlib.RawImage;
 import com.android.ddmlib.ShellCommandUnresponsiveException;
 import com.android.ddmlib.TimeoutException;
 import com.sun.javafx.beans.annotations.NonNull;
-import com.weezlabs.libs.screenshoter.model.Device;
 import com.weezlabs.libs.screenshoter.ScreenShooterManager;
+import com.weezlabs.libs.screenshoter.model.Device;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -66,7 +66,7 @@ public class DeviceShellHelper {
 	private void setUpNewDensity(final Device.Resolution targetResolution, Device.Dpi targetDpi, @NonNull final ScreenShooterManager.CommandStatusListener commandSentListener) {
 		checkIDevice();
 		try {
-			iDevice_.executeShellCommand(COMMAND_WM_DENSITY + targetDpi.getDensity(), new ShellFlushReceiver() {
+			iDevice_.executeShellCommand(COMMAND_WM_DENSITY + targetDpi.getDpiValue(), new ShellFlushReceiver() {
 				@Override
 				public void flush() {
 					if (targetResolution != null) {
@@ -190,6 +190,9 @@ public class DeviceShellHelper {
 		}
 	}
 
+	/**
+	 * Throws RuntimeException if iDevice_ is null
+	 */
 	private void checkIDevice() {
 		if (iDevice_ == null) {
 			throw new RuntimeException("You must set IDevice");

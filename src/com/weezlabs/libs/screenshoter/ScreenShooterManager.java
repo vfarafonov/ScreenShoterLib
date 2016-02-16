@@ -260,7 +260,6 @@ public class ScreenShooterManager {
 				return null;
 			}
 
-
 			@Override
 			protected void done() {
 				if (statusListener != null) {
@@ -358,41 +357,35 @@ public class ScreenShooterManager {
 		}
 
 		isJobStarted = true;
+
+		List<Mode> modesList = Mode.getModesQueue(device_);
+		// Remove excluded modes from list
+		if (excludeModes != null && excludeModes.size() > 0) {
+			for (int i = modesList.size() - 1; i >= 0; i--) {
+				if (excludeModes.contains(modesList.get(i))) {
+					System.out.println("removing: " + modesList.get(i).getDensity() + " | " + modesList.get(i).getResolution());
+					modesList.remove(i);
+				}
+			}
+		}
+
 		ScreenShooterManager.CommandStatusListener commandSentListener = new ScreenShooterManager.CommandStatusListener() {
+
 			@Override
 			public void onCommandSentToDevice() {
-				if (checkIsCancelled()) {
+				if (checkIsCancelled(progressListener)) {
 					return;
 				}
 				// Display params changed. Need to wait activity re-initialising and then to make a screenshot
 				sleepAndMakeScreenshot();
-
-				if (checkIsCancelled()) {
-					return;
-				}
-
-				// Setting up next display params
-				setNextDisplayParams(excludeModes);
-
-				if (device_.getCurrentResolution() == null) {
-					// Job is done
-					isJobStarted = false;
-					if (progressListener != null) {
-						progressListener.onScreenshotJobFinished();
-					}
-				} else {
-					shellHelper_.setResolutionAndDensity(device_.getCurrentResolution(), device_.getCurrentDpi(), this);
-				}
 			}
 
-			private boolean checkIsCancelled() {
-				if (!isJobStarted) {
-					if (progressListener != null) {
-						progressListener.onScreenshotJobCancelled();
-					}
-					return true;
+			@Override
+			public void onCommandExecutionFailed() {
+				isJobStarted = false;
+				if (progressListener != null) {
+					progressListener.onScreenshotJobFailed();
 				}
-				return false;
 			}
 
 			private void sleepAndMakeScreenshot() {
@@ -417,41 +410,28 @@ public class ScreenShooterManager {
 					e.printStackTrace();
 				}
 			}
-
-			@Override
-			public void onCommandExecutionFailed() {
-				isJobStarted = false;
-				if (progressListener != null) {
-					progressListener.onScreenshotJobFailed();
-				}
-			}
 		};
-		shellHelper_.setResolutionAndDensity(device_.getCurrentResolution(), device_.getCurrentDpi(), commandSentListener);
-	}
 
-	private void setNextDisplayParams(List<Mode> excludeModes) {
-		do {
-			device_.setCurrentDpi(device_.getCurrentDpi().getNext());
-			if (device_.getCurrentDpi() == null) {
-				// Went through all Dpis for current resolution. Setting up next resolution
-				device_.setCurrentResolution(device_.getCurrentResolution().getNext());
-				if (device_.getCurrentResolution() != null) {
-					// Set current Dpi as min between Physical dpi and max dpi for the new resolution
-					device_.setCurrentDpi(device_.getPhysicalDpi().getDensity() < device_.getCurrentResolution().getMaxDpi().getDensity() ?
-							device_.getPhysicalDpi() : device_.getCurrentResolution().getMaxDpi());
-				}
+		for (Mode mode : modesList) {
+			if (checkIsCancelled(progressListener)) {
+				break;
 			}
-		} while (isSkipping(excludeModes, device_.getCurrentResolution(), device_.getCurrentDpi()));
-	}
-
-	private boolean isSkipping(List<Mode> excludeModes, Device.Resolution resolution, Device.Dpi density) {
-		if (excludeModes == null || excludeModes.size() == 0) {
-			return false;
+			device_.setCurrentDpi(mode.getDensity());
+			device_.setCurrentResolution(mode.getResolution());
+			shellHelper_.setResolutionAndDensity(mode.getResolution(), mode.getDensity(), commandSentListener);
 		}
-		for (Mode mode : excludeModes) {
-			if (mode.getResolution() == resolution && mode.getDensity() == density) {
-				return true;
+		isJobStarted = false;
+		if (progressListener != null) {
+			progressListener.onScreenshotJobFinished();
+		}
+	}
+
+	private boolean checkIsCancelled(ScreenShotJobProgressListener progressListener) {
+		if (!isJobStarted) {
+			if (progressListener != null) {
+				progressListener.onScreenshotJobCancelled();
 			}
+			return true;
 		}
 		return false;
 	}

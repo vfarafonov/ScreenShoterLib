@@ -79,7 +79,7 @@ public class Device {
 
 		public static Dpi fromDensity(int density) {
 			for (Dpi dpi : Dpi.values()) {
-				if (density == dpi.getDensity()) {
+				if (density == dpi.getDpiValue()) {
 					return dpi;
 				}
 			}
@@ -90,7 +90,7 @@ public class Device {
 			return next_;
 		}
 
-		public int getDensity() {
+		public int getDpiValue() {
 			return density_;
 		}
 	}
@@ -156,6 +156,14 @@ public class Device {
 
 		public Dpi getMaxDpi() {
 			return maxDpi_;
+		}
+
+		public int getHeight() {
+			return height_;
+		}
+
+		public int getWidth() {
+			return width_;
 		}
 	}
 }
