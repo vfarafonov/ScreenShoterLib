@@ -14,6 +14,7 @@ import com.weezlabs.libs.screenshoter.model.Device;
 import com.weezlabs.libs.screenshoter.model.Mode;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
@@ -39,6 +40,7 @@ public class ScreenShooterManager {
 	private static final int SUCCESS = 1;
 	private static final int FAIL = 2;
 	private static final int CANCEL = 3;
+	private static final String ADB_PATH_RELATIVE_TO_SDK_ROOT = "/platform-tools/adb";
 	private static volatile ScreenShooterManager instance_;
 
 	private AdbHelper adbHelper_;
@@ -47,28 +49,31 @@ public class ScreenShooterManager {
 	private boolean isJobStarted;
 
 	private ScreenShooterManager() {
-		adbHelper_ = AdbHelper.getInstance();
+	}
+
+	private ScreenShooterManager(String adbPath) {
+		adbHelper_ = AdbHelper.getInstance(adbPath);
 		if (!adbHelper_.isConnected()) {
 			adbHelper_.restartAdb();
 		}
 		shellHelper_ = DeviceShellHelper.getInstance();
 	}
 
-	public static ScreenShooterManager getInstance() {
+	public static ScreenShooterManager getInstance(String adbPath) {
 		if (instance_ == null) {
 			System.out.println("Creating sync");
-			createInstance();
+			createInstance(adbPath);
 		}
 		return instance_;
 	}
 
-	public static void getInstanceAsync(final ManagerInitListener listener) {
+	public static void getInstanceAsync(final String adbPath, final ManagerInitListener listener) {
 		new SwingWorker<Void, Void>() {
 
 			@Override
 			protected Void doInBackground() throws Exception {
 				if (instance_ == null) {
-					createInstance();
+					createInstance(adbPath);
 				}
 				return null;
 			}
@@ -82,9 +87,9 @@ public class ScreenShooterManager {
 		}.execute();
 	}
 
-	private static synchronized void createInstance() {
+	private static synchronized void createInstance(String adbPath) {
 		if (instance_ == null) {
-			instance_ = new ScreenShooterManager();
+			instance_ = new ScreenShooterManager(adbPath);
 		}
 	}
 
@@ -230,6 +235,29 @@ public class ScreenShooterManager {
 		} else {
 			return null;
 		}
+	}
+
+	public static String getSystemAdbLocation() {
+		String android_home = System.getenv("ANDROID_HOME");
+		if (android_home != null) {
+			String sdkPath = android_home + ADB_PATH_RELATIVE_TO_SDK_ROOT;
+			if (checkForAdbInPath(sdkPath)) {
+				return sdkPath;
+			}
+		}
+		return null;
+	}
+
+	public static boolean checkForAdbInPath(String adbPath) {
+		File adbDir = new File(adbPath).getParentFile();
+		return adbDir.exists() &&
+				adbDir.isDirectory() &&
+				adbDir.list(new FilenameFilter() {
+					@Override
+					public boolean accept(File dir, String name) {
+						return name.indexOf("adb") == 0;
+					}
+				}).length > 0;
 	}
 
 	public IDevice[] getDevices() {

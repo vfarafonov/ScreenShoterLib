@@ -2,9 +2,7 @@ package com.weezlabs.libs.screenshoter.adb;
 
 import com.android.ddmlib.AndroidDebugBridge;
 import com.android.ddmlib.IDevice;
-
-import java.io.File;
-import java.io.FilenameFilter;
+import com.weezlabs.libs.screenshoter.ScreenShooterManager;
 
 /**
  * Creates adb bridge when instantiated. Adb path picked up based on ANDROID_HOME environment variable
@@ -12,47 +10,28 @@ import java.io.FilenameFilter;
  * Created by vfarafonov on 09.02.2016.
  */
 public class AdbHelper {
-	private static final String ADB_PATH_RELATIVE_TO_SDK_ROOT = "/platform-tools/adb";
 	private static volatile AdbHelper adbHelper_;
 	private AndroidDebugBridge adb_;
 
-	private AdbHelper() {
+	private AdbHelper() {}
+
+	private AdbHelper(String adbPath) {
 		AndroidDebugBridge.init(false);
-		adb_ = AndroidDebugBridge.createBridge(getAdbLocation(), true);
+		if (!ScreenShooterManager.checkForAdbInPath(adbPath)){
+			throw new IllegalArgumentException("Adb not found. Check path with getSystemAdbLocation");
+		}
+		adb_ = AndroidDebugBridge.createBridge(adbPath, true);
 	}
 
-	public static AdbHelper getInstance() {
+	public static AdbHelper getInstance(String adbPath) {
 		if (adbHelper_ == null) {
 			synchronized (AdbHelper.class) {
 				if (adbHelper_ == null) {
-					adbHelper_ = new AdbHelper();
+					adbHelper_ = new AdbHelper(adbPath);
 				}
 			}
 		}
 		return adbHelper_;
-	}
-
-	private static String getAdbLocation() {
-		String android_home = System.getenv("ANDROID_HOME");
-		if (android_home != null) {
-			String sdkPath = android_home + ADB_PATH_RELATIVE_TO_SDK_ROOT;
-			if (checkForAdbInPath(sdkPath)) {
-				return sdkPath;
-			}
-		}
-		return null;
-	}
-
-	private static boolean checkForAdbInPath(String adbPath) {
-		File adbDir = new File(adbPath).getParentFile();
-		return adbDir.exists() &&
-				adbDir.isDirectory() &&
-				adbDir.list(new FilenameFilter() {
-					@Override
-					public boolean accept(File dir, String name) {
-						return name.indexOf("adb") == 0;
-					}
-				}).length > 0;
 	}
 
 	public IDevice[] getDevices() {
