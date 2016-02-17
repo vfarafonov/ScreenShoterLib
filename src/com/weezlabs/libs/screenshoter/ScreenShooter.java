@@ -13,7 +13,7 @@ import java.util.List;
 public class ScreenShooter {
 	public static void main(String[] args) {
 
-		final ScreenShooterManager screenShooterManager = ScreenShooterManager.getInstance();
+		final ScreenShooterManager screenShooterManager = ScreenShooterManager.getInstance(ScreenShooterManager.getSystemAdbLocation());
 		IDevice[] devices = screenShooterManager.getDevices();
 		if (devices.length == 0) {
 			System.out.println("No device connected");
