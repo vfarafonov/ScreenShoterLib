@@ -13,11 +13,12 @@ public class AdbHelper {
 	private static volatile AdbHelper adbHelper_;
 	private AndroidDebugBridge adb_;
 
-	private AdbHelper() {}
+	private AdbHelper() {
+	}
 
 	private AdbHelper(String adbPath) {
 		AndroidDebugBridge.init(false);
-		if (!ScreenShooterManager.checkForAdbInPath(adbPath)){
+		if (!ScreenShooterManager.checkForAdbInPath(adbPath)) {
 			throw new IllegalArgumentException("Adb not found. Check path with getSystemAdbLocation");
 		}
 		adb_ = AndroidDebugBridge.createBridge(adbPath, true);

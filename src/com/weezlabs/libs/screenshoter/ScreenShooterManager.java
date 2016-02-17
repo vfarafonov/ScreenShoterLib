@@ -249,8 +249,12 @@ public class ScreenShooterManager {
 	}
 
 	public static boolean checkForAdbInPath(String adbPath) {
+		if (adbPath == null){
+			return false;
+		}
 		File adbDir = new File(adbPath).getParentFile();
-		return adbDir.exists() &&
+		return adbDir != null &&
+				adbDir.exists() &&
 				adbDir.isDirectory() &&
 				adbDir.list(new FilenameFilter() {
 					@Override
