@@ -273,6 +273,20 @@ public class DeviceShellHelper {
 	}
 
 	/**
+	 * Returns command for density reset based on IDevice Api level
+	 */
+	private String getDensityResetCommand(IDevice iDevice_) {
+		return iDevice_.getApiLevel() >= JELLY_BEAN_4_3_LEVEL ? COMMAND_WM_DENSITY_RESET : COMMAND_AM_DENSITY_RESET;
+	}
+
+	/**
+	 * Returns command for size reset based on IDevice Api level
+	 */
+	private String getSizeResetCommand(IDevice iDevice_) {
+		return iDevice_.getApiLevel() >= JELLY_BEAN_4_3_LEVEL ? COMMAND_WM_SIZE_RESET : COMMAND_AM_SIZE_RESET;
+	}
+
+	/**
 	 * Sets up new resolution
 	 */
 	private void setUpNewResolution(Device.Resolution targetResolution, @NonNull final ScreenShooterManager.CommandStatusListener commandSentListener) {
@@ -338,17 +352,17 @@ public class DeviceShellHelper {
 		checkIDevice();
 		try {
 			// Reset display resolution
-			iDevice_.executeShellCommand(COMMAND_WM_SIZE_RESET, new ShellFlushReceiver() {
+			iDevice_.executeShellCommand(getSizeResetCommand(iDevice_), new ShellFlushReceiver() {
 				@Override
 				public void flush() {
 					try {
 						// Reset display density
-						iDevice_.executeShellCommand(COMMAND_WM_DENSITY_RESET, new ShellFlushReceiver() {
+						iDevice_.executeShellCommand(getDensityResetCommand(iDevice_), new ShellFlushReceiver() {
 							@Override
 							public void flush() {
 								try {
 									// Need to reset display density twice to make system UI looks perfect
-									iDevice_.executeShellCommand(COMMAND_WM_DENSITY_RESET, new ShellFlushReceiver() {
+									iDevice_.executeShellCommand(getDensityResetCommand(iDevice_), new ShellFlushReceiver() {
 										@Override
 										public void flush() {
 											if (commandListener != null) {
