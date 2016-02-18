@@ -1,11 +1,7 @@
 package com.weezlabs.libs.screenshoter;
 
-import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.ddmlib.AndroidDebugBridge;
 import com.android.ddmlib.IDevice;
-import com.android.ddmlib.IShellOutputReceiver;
-import com.android.ddmlib.ShellCommandUnresponsiveException;
-import com.android.ddmlib.TimeoutException;
 import com.sun.istack.internal.Nullable;
 import com.sun.javafx.beans.annotations.NonNull;
 import com.weezlabs.libs.screenshoter.adb.AdbHelper;
@@ -16,7 +12,6 @@ import com.weezlabs.libs.screenshoter.model.Mode;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 import javax.swing.SwingWorker;
@@ -35,8 +30,6 @@ public class ScreenShooterManager {
 	public static final String DEFAULT_SCREENSHOTS_DIR = "screenshots";
 	public static final String DEFAULT_SCREENSHOTS_PREFIX = "output_";
 	public static final int DEFAULT_SLEEP_TIME_MS = 1000;
-	private static final String TEXT_PHYSICAL_DENSITY = "Physical density: ";
-	private static final String TEXT_PHYSICAL_SIZE = "Physical size: ";
 	private static final int SUCCESS = 1;
 	private static final int FAIL = 2;
 	private static final int CANCEL = 3;
@@ -96,14 +89,14 @@ public class ScreenShooterManager {
 	/**
 	 * Requests device's display parameters asynchronous
 	 */
-	public static void getDeviceDisplayInfoAsync(@NonNull final IDevice iDevice, @NonNull final ScreenShooterManager.DeviceInfoListener deviceInfoListener) {
+	public static void getDeviceDisplayInfoAsync(@NonNull final IDevice iDevice, @NonNull final DeviceShellHelper.DeviceInfoListener deviceInfoListener) {
 		new SwingWorker<Void, Void>() {
 			private Device device_;
 			private Exception exception_;
 
 			@Override
 			protected Void doInBackground() throws Exception {
-				getDeviceDisplayInfo(iDevice, new DeviceInfoListener() {
+				DeviceShellHelper.getDeviceDisplayInfo(iDevice, new DeviceShellHelper.DeviceInfoListener() {
 					@Override
 					public void onDeviceInfoUpdated(Device device) {
 						device_ = device;
@@ -128,115 +121,6 @@ public class ScreenShooterManager {
 		}.execute();
 	}
 
-	/**
-	 * Requests device's display parameters
-	 */
-	public static void getDeviceDisplayInfo(@NonNull final IDevice iDevice, @NonNull final ScreenShooterManager.DeviceInfoListener deviceInfoListener) {
-		final Device device = new Device(iDevice);
-		try {
-			// Request device density
-			iDevice.executeShellCommand(DeviceShellHelper.COMMAND_WM_DENSITY, new IShellOutputReceiver() {
-				@Override
-				public void addOutput(byte[] bytes, int i, int i1) {
-					try {
-						Device.Dpi dpi = getDpiFromOutput(new String(bytes, i, i1, "UTF-8"));
-						if (dpi != null) {
-							device.setPhysicalDpi(dpi);
-							device.setCurrentDpi(dpi);
-						} else {
-							deviceInfoListener.onDeviceUpdateFailed(iDevice, new Exception("Can't parse density output"));
-						}
-					} catch (UnsupportedEncodingException e) {
-						deviceInfoListener.onDeviceUpdateFailed(iDevice, e);
-						e.printStackTrace();
-					}
-				}
-
-				@Override
-				public void flush() {
-					try {
-						// Request device display size
-						iDevice.executeShellCommand(DeviceShellHelper.COMMAND_WM_SIZE, new IShellOutputReceiver() {
-							@Override
-							public void addOutput(byte[] bytes, int i, int i1) {
-								try {
-									Device.Resolution resolution = getResolutionFromOutput(new String(bytes, i, i1, "UTF-8"));
-									if (resolution != null) {
-										device.setPhysicalResolution(resolution);
-										device.setCurrentResolution(resolution);
-									}
-								} catch (UnsupportedEncodingException e) {
-									e.printStackTrace();
-								}
-							}
-
-							@Override
-							public void flush() {
-								// All done. Sending info to listener
-								if (device.getPhysicalResolution() != null) {
-									deviceInfoListener.onDeviceInfoUpdated(device);
-								} else {
-									deviceInfoListener.onDeviceUpdateFailed(iDevice, new Exception("Can't parse size output"));
-								}
-							}
-
-							@Override
-							public boolean isCancelled() {
-								return false;
-							}
-						});
-					} catch (TimeoutException | AdbCommandRejectedException | IOException | ShellCommandUnresponsiveException e) {
-						e.printStackTrace();
-					}
-				}
-
-				@Override
-				public boolean isCancelled() {
-					return false;
-				}
-			});
-		} catch (TimeoutException | AdbCommandRejectedException | IOException | ShellCommandUnresponsiveException e) {
-			e.printStackTrace();
-			deviceInfoListener.onDeviceUpdateFailed(iDevice, e);
-		}
-	}
-
-	/**
-	 * Parses terminal output and picks up resolution
-	 */
-	private static Device.Resolution getResolutionFromOutput(String output) {
-		int index = output.indexOf(TEXT_PHYSICAL_SIZE);
-		if (index != -1) {
-			int lineEndingIndex = output.indexOf("\n");
-			String resolutionString = output.substring(
-					index + TEXT_PHYSICAL_SIZE.length(),
-					lineEndingIndex != -1 ? lineEndingIndex - 1 : output.length()
-			);
-			String width = resolutionString.substring(0, resolutionString.indexOf('x'));
-			String height = resolutionString.substring(resolutionString.indexOf('x') + 1);
-			return Device.Resolution.fromSize(Integer.valueOf(width), Integer.valueOf(height));
-		} else {
-			return null;
-		}
-	}
-
-	/**
-	 * Parses terminal output and picks up density
-	 */
-	private static Device.Dpi getDpiFromOutput(String output) {
-		int index = output.indexOf(TEXT_PHYSICAL_DENSITY);
-		if (index != -1) {
-			int lineEndingIndex = output.indexOf("\n");
-			String densityString = output.substring(
-					index + TEXT_PHYSICAL_DENSITY.length(),
-					lineEndingIndex != -1 ? lineEndingIndex - 1 : output.length()
-			);
-			return Device.Dpi.fromDensity(Integer.valueOf(densityString));
-		} else {
-			return null;
-		}
-	}
-
 	public static String getSystemAdbLocation() {
 		String android_home = System.getenv("ANDROID_HOME");
 		if (android_home != null) {
@@ -249,7 +133,7 @@ public class ScreenShooterManager {
 	}
 
 	public static boolean checkForAdbInPath(String adbPath) {
-		if (adbPath == null){
+		if (adbPath == null) {
 			return false;
 		}
 		File adbDir = new File(adbPath).getParentFile();
@@ -262,6 +146,10 @@ public class ScreenShooterManager {
 						return name.indexOf("adb") == 0;
 					}
 				}).length > 0;
+	}
+
+	public static void getDeviceDisplayInfo(@NonNull IDevice iDevice, @NonNull DeviceShellHelper.DeviceInfoListener deviceInfoListener) {
+		DeviceShellHelper.getDeviceDisplayInfo(iDevice, deviceInfoListener);
 	}
 
 	public IDevice[] getDevices() {
@@ -502,12 +390,6 @@ public class ScreenShooterManager {
 
 	public interface ManagerInitListener {
 		void onManagerReady(ScreenShooterManager manager);
-	}
-
-	public interface DeviceInfoListener {
-		void onDeviceInfoUpdated(Device device);
-
-		void onDeviceUpdateFailed(IDevice iDevice, Exception e);
 	}
 
 	public interface CommandStatusListener {
