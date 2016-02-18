@@ -1,6 +1,7 @@
 package com.weezlabs.libs.screenshoter;
 
 import com.android.ddmlib.IDevice;
+import com.weezlabs.libs.screenshoter.adb.DeviceShellHelper;
 import com.weezlabs.libs.screenshoter.model.Device;
 import com.weezlabs.libs.screenshoter.model.Mode;
 
@@ -19,7 +20,7 @@ public class ScreenShooter {
 			System.out.println("No device connected");
 			return;
 		}
-		ScreenShooterManager.getDeviceDisplayInfo(devices[0], new ScreenShooterManager.DeviceInfoListener() {
+		ScreenShooterManager.getDeviceDisplayInfo(devices[0], new DeviceShellHelper.DeviceInfoListener() {
 			@Override
 			public void onDeviceInfoUpdated(Device device) {
 				System.out.println("Success. Density: " + device.getPhysicalDpi().getDpiValue() + " Resolution: " + device.getPhysicalResolution());
