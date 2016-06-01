@@ -268,6 +268,75 @@ public class ScreenShooterManager {
 	}
 
 	/**
+	 * Goes through all specified modes and makes a screenshots. Works asynchronous.
+	 *
+	 * @param directory        Directory to save screenshots. Will try to create if not exists. {@link ScreenShooterManager#DEFAULT_SCREENSHOTS_DIR} will be used if null
+	 * @param filePrefix       File prefix. {@link ScreenShooterManager#DEFAULT_SCREENSHOTS_PREFIX} will be used if null
+	 * @param sleepTimeMs      Time to sleep before making a screenshot. {@link ScreenShooterManager#DEFAULT_SLEEP_TIME_MS} will be used if null
+	 * @param modes            List of modes
+	 * @param progressListener Progress listener
+	 */
+	public void createScreenshotsForModesAsync(@Nullable final File directory,
+											   @Nullable final String filePrefix,
+											   @Nullable final Integer sleepTimeMs,
+											   @NonNull final List<Mode> modes,
+											   final ScreenShooterManager.ScreenShotJobProgressListener progressListener) {
+		new SwingWorker<Void, Integer>() {
+			public int totalCount_;
+			private int result = 0;
+
+			@Override
+			protected Void doInBackground() throws Exception {
+				createScreenshotsForModes(directory, filePrefix, sleepTimeMs, modes, new ScreenShotJobProgressListener() {
+					@Override
+					public void onScreenshotJobFinished() {
+						result = SUCCESS;
+					}
+
+					@Override
+					public void onScreenshotJobFailed() {
+						result = FAIL;
+					}
+
+					@Override
+					public void onScreenshotJobCancelled() {
+						result = CANCEL;
+					}
+
+					@Override
+					public void onScreenshotJobProgressUpdate(int currentProgress, int totalCount) {
+						if (totalCount_ == 0) {
+							totalCount_ = totalCount;
+						}
+						publish(currentProgress);
+					}
+				});
+				return null;
+			}
+
+			@Override
+			protected void process(List<Integer> chunks) {
+				if (progressListener != null) {
+					progressListener.onScreenshotJobProgressUpdate(chunks.get(chunks.size() - 1), totalCount_);
+				}
+			}
+
+			@Override
+			protected void done() {
+				if (progressListener != null) {
+					if (result == SUCCESS) {
+						progressListener.onScreenshotJobFinished();
+					} else if (result == CANCEL) {
+						progressListener.onScreenshotJobCancelled();
+					} else if (result == FAIL) {
+						progressListener.onScreenshotJobFailed();
+					}
+				}
+			}
+		}.execute();
+	}
+
+	/**
 	 * Goes through all possible display params and makes a screenshots. Skips modes in excludeModes list
 	 *
 	 * @param directory        Directory to save screenshots. Will try to create if not exists. {@link ScreenShooterManager#DEFAULT_SCREENSHOTS_DIR} will be used if null
@@ -281,19 +350,7 @@ public class ScreenShooterManager {
 												   @Nullable final Integer sleepTimeMs,
 												   final List<Mode> excludeModes,
 												   final ScreenShotJobProgressListener progressListener) {
-		if (device_ == null) {
-			throw new RuntimeException("Device must be set up");
-		}
-		if (device_.getPhysicalDpi() == null || device_.getPhysicalResolution() == null) {
-			throw new IllegalArgumentException("Device's physical dpi and resolution cannot be null");
-		}
-
-		final File dir = directory != null ? directory : new File(DEFAULT_SCREENSHOTS_DIR);
-		if (!dir.exists() && !dir.mkdirs()) {
-			throw new RuntimeException("Cannot create screenshots dir");
-		}
-
-		isJobStarted = true;
+		checkIfDeviceReady();
 
 		List<Mode> modesList = Mode.getModesQueue(device_);
 		// Remove excluded modes from list
@@ -305,6 +362,32 @@ public class ScreenShooterManager {
 				}
 			}
 		}
+
+		createScreenshotsForModes(directory, filePrefix, sleepTimeMs, modesList, progressListener);
+	}
+
+	/**
+	 * Goes through list of modes and makes a screenshots.
+	 *
+	 * @param directory        Directory to save screenshots. Will try to create if not exists. {@link ScreenShooterManager#DEFAULT_SCREENSHOTS_DIR} will be used if null
+	 * @param filePrefix       File prefix. {@link ScreenShooterManager#DEFAULT_SCREENSHOTS_PREFIX} will be used if null
+	 * @param sleepTimeMs      Time to sleep before making a screenshot. {@link ScreenShooterManager#DEFAULT_SLEEP_TIME_MS} will be used if null
+	 * @param modes            List of modes
+	 * @param progressListener Progress listener
+	 */
+	public void createScreenshotsForModes(@Nullable File directory,
+										  @Nullable final String filePrefix,
+										  @Nullable final Integer sleepTimeMs,
+										  @NonNull final List<Mode> modes,
+										  final ScreenShotJobProgressListener progressListener) {
+		checkIfDeviceReady();
+
+		final File dir = directory != null ? directory : new File(DEFAULT_SCREENSHOTS_DIR);
+		if (!dir.exists() && !dir.mkdirs()) {
+			throw new RuntimeException("Cannot create screenshots dir");
+		}
+
+		isJobStarted = true;
 
 		ScreenShooterManager.CommandStatusListener commandSentListener = new ScreenShooterManager.CommandStatusListener() {
 
@@ -349,12 +432,12 @@ public class ScreenShooterManager {
 			}
 		};
 
-		int size = modesList.size();
+		int size = modes.size();
 		for (int i = 0; i < size; i++) {
 			if (checkIsCancelled(progressListener)) {
 				break;
 			}
-			Mode mode = modesList.get(i);
+			Mode mode = modes.get(i);
 			device_.setCurrentDpi(mode.getDensity());
 			device_.setCurrentResolution(mode.getResolution());
 			shellHelper_.setResolutionAndDensity(mode.getResolution(), mode.getDensity(), commandSentListener);
@@ -365,6 +448,15 @@ public class ScreenShooterManager {
 		isJobStarted = false;
 		if (progressListener != null) {
 			progressListener.onScreenshotJobFinished();
+		}
+	}
+
+	private void checkIfDeviceReady() {
+		if (device_ == null) {
+			throw new RuntimeException("Device must be set up");
+		}
+		if (device_.getPhysicalDpi() == null || device_.getPhysicalResolution() == null) {
+			throw new IllegalArgumentException("Device's physical dpi and resolution cannot be null");
 		}
 	}
 

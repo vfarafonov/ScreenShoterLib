@@ -37,7 +37,7 @@ public class ScreenShooter {
 						new ScreenShooterManager.ScreenShotJobProgressListener() {
 							@Override
 							public void onScreenshotJobFinished() {
-								System.out.println("IT WORKS!!!!");
+								System.out.println("Job finished");
 								screenShooterManager.resetDeviceDisplay(new ScreenShooterManager.CommandStatusListener() {
 									@Override
 									public void onCommandSentToDevice() {
