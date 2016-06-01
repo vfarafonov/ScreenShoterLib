@@ -2,8 +2,10 @@ package com.weezlabs.libs.screenshoter;
 
 import com.android.ddmlib.IDevice;
 import com.weezlabs.libs.screenshoter.adb.DeviceShellHelper;
+import com.weezlabs.libs.screenshoter.model.Density;
 import com.weezlabs.libs.screenshoter.model.Device;
 import com.weezlabs.libs.screenshoter.model.Mode;
+import com.weezlabs.libs.screenshoter.model.Resolution;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,13 +25,13 @@ public class ScreenShooter {
 		ScreenShooterManager.getDeviceDisplayInfo(devices[0], new DeviceShellHelper.DeviceInfoListener() {
 			@Override
 			public void onDeviceInfoUpdated(Device device) {
-				System.out.println("Success. Density: " + device.getPhysicalDpi().getDpiValue() + " Resolution: " + device.getPhysicalResolution());
+				System.out.println("Success. DensityInterface: " + device.getPhysicalDpi().getDpiValue() + " DefaultResolution: " + device.getPhysicalResolution());
 				screenShooterManager.setDevice(device);
 				List<Mode> excludedList = new ArrayList<Mode>();
-				excludedList.add(new Mode(Device.Resolution.NORMAL_PLUS_1, Device.Dpi.HDPI));
-				excludedList.add(new Mode(Device.Resolution.NORMAL_PLUS_1, Device.Dpi.MDPI));
-				excludedList.add(new Mode(Device.Resolution.XXLARGE_1, Device.Dpi.HDPI));
-				excludedList.add(new Mode(Device.Resolution.XXLARGE_1, Device.Dpi.MDPI));
+				excludedList.add(new Mode(Resolution.DefaultResolution.NORMAL_PLUS_1, Density.DefaultDensity.HDPI));
+				excludedList.add(new Mode(Resolution.DefaultResolution.NORMAL_PLUS_1, Density.DefaultDensity.MDPI));
+				excludedList.add(new Mode(Resolution.DefaultResolution.XXLARGE_1, Density.DefaultDensity.HDPI));
+				excludedList.add(new Mode(Resolution.DefaultResolution.XXLARGE_1, Density.DefaultDensity.MDPI));
 				screenShooterManager.createScreenshotsForAllResolutions(null,
 						null,
 						null,

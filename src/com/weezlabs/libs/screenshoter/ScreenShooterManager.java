@@ -352,7 +352,7 @@ public class ScreenShooterManager {
 												   final ScreenShotJobProgressListener progressListener) {
 		checkIfDeviceReady();
 
-		List<Mode> modesList = Mode.getModesQueue(device_);
+		List<Mode> modesList = Mode.getDefaultModesQueue(device_);
 		// Remove excluded modes from list
 		if (excludeModes != null && excludeModes.size() > 0) {
 			for (int i = modesList.size() - 1; i >= 0; i--) {

@@ -8,7 +8,9 @@ import com.android.ddmlib.ShellCommandUnresponsiveException;
 import com.android.ddmlib.TimeoutException;
 import com.sun.javafx.beans.annotations.NonNull;
 import com.weezlabs.libs.screenshoter.ScreenShooterManager;
+import com.weezlabs.libs.screenshoter.model.Density;
 import com.weezlabs.libs.screenshoter.model.Device;
+import com.weezlabs.libs.screenshoter.model.Resolution;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -104,8 +106,8 @@ public class DeviceShellHelper {
 			String height = resolutionString.substring(resolutionString.indexOf('x') + 1, resolutionString.indexOf(" "));
 			int dpiValue = Integer.valueOf(resolutionString.substring(resolutionString.indexOf(" ") + 1, resolutionString.indexOf("dpi")));
 
-			device.setPhysicalResolution(Device.Resolution.fromSize(Integer.valueOf(width), Integer.valueOf(height)));
-			device.setPhysicalDpi(Device.Dpi.fromDensity(dpiValue));
+			device.setPhysicalResolution(Resolution.DefaultResolution.fromSize(Integer.valueOf(width), Integer.valueOf(height)));
+			device.setPhysicalDpi(Density.DefaultDensity.fromDensity(dpiValue));
 			return true;
 		}
 		return false;
@@ -119,7 +121,7 @@ public class DeviceShellHelper {
 				@Override
 				public void addOutput(byte[] bytes, int i, int i1) {
 					try {
-						Device.Dpi dpi = getDpiFromOutputPost18(new String(bytes, i, i1, "UTF-8"));
+						Device.DensityInterface dpi = getDpiFromOutputPost18(new String(bytes, i, i1, "UTF-8"));
 						if (dpi != null) {
 							device.setPhysicalDpi(dpi);
 							device.setCurrentDpi(dpi);
@@ -140,7 +142,7 @@ public class DeviceShellHelper {
 							@Override
 							public void addOutput(byte[] bytes, int i, int i1) {
 								try {
-									Device.Resolution resolution = getResolutionFromOutputPost18(new String(bytes, i, i1, "UTF-8"));
+									Device.ResolutionInterface resolution = getResolutionFromOutputPost18(new String(bytes, i, i1, "UTF-8"));
 									if (resolution != null) {
 										device.setPhysicalResolution(resolution);
 										device.setCurrentResolution(resolution);
@@ -184,7 +186,7 @@ public class DeviceShellHelper {
 	/**
 	 * Parses terminal output and picks up resolution
 	 */
-	private static Device.Resolution getResolutionFromOutputPost18(String output) {
+	private static Device.ResolutionInterface getResolutionFromOutputPost18(String output) {
 		int index = output.indexOf(TEXT_PHYSICAL_SIZE);
 		if (index != -1) {
 			int lineEndingIndex = output.indexOf("\n");
@@ -194,7 +196,7 @@ public class DeviceShellHelper {
 			);
 			String width = resolutionString.substring(0, resolutionString.indexOf('x'));
 			String height = resolutionString.substring(resolutionString.indexOf('x') + 1);
-			return Device.Resolution.fromSize(Integer.valueOf(width), Integer.valueOf(height));
+			return Resolution.DefaultResolution.fromSize(Integer.valueOf(width), Integer.valueOf(height));
 		} else {
 			return null;
 		}
@@ -203,7 +205,7 @@ public class DeviceShellHelper {
 	/**
 	 * Parses terminal output and picks up density
 	 */
-	private static Device.Dpi getDpiFromOutputPost18(String output) {
+	private static Device.DensityInterface getDpiFromOutputPost18(String output) {
 		int index = output.indexOf(TEXT_PHYSICAL_DENSITY);
 		if (index != -1) {
 			int lineEndingIndex = output.indexOf("\n");
@@ -211,7 +213,7 @@ public class DeviceShellHelper {
 					index + TEXT_PHYSICAL_DENSITY.length(),
 					lineEndingIndex != -1 ? lineEndingIndex - 1 : output.length()
 			);
-			return Device.Dpi.fromDensity(Integer.valueOf(densityString));
+			return Density.DefaultDensity.fromDensity(Integer.valueOf(densityString));
 		} else {
 			return null;
 		}
@@ -225,7 +227,7 @@ public class DeviceShellHelper {
 	/**
 	 * Sets up new display parameters
 	 */
-	public void setResolutionAndDensity(final Device.Resolution targetResolution, Device.Dpi targetDpi, @NonNull ScreenShooterManager.CommandStatusListener commandSentListener) {
+	public void setResolutionAndDensity(final Device.ResolutionInterface targetResolution, Device.DensityInterface targetDpi, @NonNull ScreenShooterManager.CommandStatusListener commandSentListener) {
 		System.out.println(String.format("Setting params: size %s dpi %s", targetResolution, targetDpi));
 		if (targetDpi != null) {
 			setUpNewDensity(targetResolution, targetDpi, commandSentListener);
@@ -239,7 +241,7 @@ public class DeviceShellHelper {
 	/**
 	 * Sets up new density and triggers resolution change if needed
 	 */
-	private void setUpNewDensity(final Device.Resolution targetResolution, Device.Dpi targetDpi, @NonNull final ScreenShooterManager.CommandStatusListener commandSentListener) {
+	private void setUpNewDensity(final Device.ResolutionInterface targetResolution, Device.DensityInterface targetDpi, @NonNull final ScreenShooterManager.CommandStatusListener commandSentListener) {
 		checkIDevice();
 		try {
 			iDevice_.executeShellCommand(getDensityCommand(iDevice_) + targetDpi.getDpiValue(), new ShellFlushReceiver() {
@@ -289,7 +291,7 @@ public class DeviceShellHelper {
 	/**
 	 * Sets up new resolution
 	 */
-	private void setUpNewResolution(Device.Resolution targetResolution, @NonNull final ScreenShooterManager.CommandStatusListener commandSentListener) {
+	private void setUpNewResolution(Device.ResolutionInterface targetResolution, @NonNull final ScreenShooterManager.CommandStatusListener commandSentListener) {
 		checkIDevice();
 		try {
 			iDevice_.executeShellCommand(getSizeCommand(iDevice_) + targetResolution, new ShellFlushReceiver() {

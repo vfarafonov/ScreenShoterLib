@@ -7,20 +7,19 @@ import java.util.List;
  * Created by vfarafonov on 15.02.2016.
  */
 public class Mode {
-	private final Device.Resolution resolution_;
-	private final Device.Dpi density_;
+	private final Device.ResolutionInterface resolution_;
+	private final Device.DensityInterface density_;
 	private boolean isActivated_ = true;
 
-	public Mode(Device.Resolution resolution, Device.Dpi density) {
+	public Mode(Device.ResolutionInterface resolution, Device.DensityInterface density) {
 		resolution_ = resolution;
 		density_ = density;
 	}
 
-	public static List<Mode> getModesQueue(Device device) {
-		// TODO: refactor commands to use modes list
+	public static List<Mode> getDefaultModesQueue(Device device) {
 		List<Mode> modes = new ArrayList<>();
-		Device.Resolution resolution = device.getPhysicalResolution();
-		Device.Dpi density = device.getPhysicalDpi();
+		Device.ResolutionInterface resolution = device.getPhysicalResolution();
+		Device.DensityInterface density = device.getPhysicalDpi();
 		while (resolution != null) {
 			modes.add(new Mode(resolution, density));
 			density = density.getNext();
@@ -49,11 +48,11 @@ public class Mode {
 				density_.getDpiValue() == other.getDensity().getDpiValue();
 	}
 
-	public Device.Resolution getResolution() {
+	public Device.ResolutionInterface getResolution() {
 		return resolution_;
 	}
 
-	public Device.Dpi getDensity() {
+	public Device.DensityInterface getDensity() {
 		return density_;
 	}
 
